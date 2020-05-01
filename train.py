@@ -166,6 +166,10 @@ if __name__ == "__main__":
                         help='rank of process for distributed')
     parser.add_argument('-g', '--group_name', type=str, default='',
                         help='name of group for distributed')
+    parser.add_argument('-nc', '--nirvana_checkpoint_path', type=str, default='nirvana_checkpoint.pt',
+                        help='nirvana checkpoint path')
+    parser.add_argument('-nt', '--nirvana_tensorboard_path', type=str, default='tensorboard.tar',
+                        help='nirvana tensorboard path')
     args = parser.parse_args()
 
     # Parse configs.  Globals nicer in this case
@@ -179,6 +183,9 @@ if __name__ == "__main__":
     dist_config = config["dist_config"]
     global waveglow_config
     waveglow_config = config["waveglow_config"]
+
+    train_config['nirvana_checkpoint_path'] = args.nirvana_checkpoint_path
+    train_config['nirvana_tensorboard_path'] = args.nirvana_tensorboard_path
 
     num_gpus = torch.cuda.device_count()
     if num_gpus > 1:
