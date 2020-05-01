@@ -39,17 +39,20 @@ from glow import WaveGlow, WaveGlowLoss
 from mel2samp import Mel2Samp
 
 def load_checkpoint(checkpoint_path, model, optimizer):
-    assert os.path.isfile(checkpoint_path)
-    checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
-    iteration = checkpoint_dict['iteration']
-    optimizer.load_state_dict(checkpoint_dict['optimizer'])
-    model_for_loading = checkpoint_dict['model']
-    model.load_state_dict(model_for_loading.state_dict())
-    print("Loaded checkpoint '{}' (iteration {})" .format(
-          checkpoint_path, iteration))
-    return model, optimizer, iteration
+    if checkpoint_path is not None and os.path.exists(checkpoint_path):
+        try:
+            checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
+        except:
+            print('Trining from zero')
+        iteration = checkpoint_dict['iteration']
+        optimizer.load_state_dict(checkpoint_dict['optimizer'])
+        model_for_loading = checkpoint_dict['model']
+        model.load_state_dict(model_for_loading.state_dict())
+        print("Loaded checkpoint '{}' (iteration {})" .format(
+              checkpoint_path, iteration))
+        return model, optimizer, iteration
 
-def save_checkpoint(model, optimizer, learning_rate, iteration, filepath):
+def save_checkpoint(model, optimizer, learning_rate, iteration, filepath, nirvana_path):
     print("Saving model and optimizer state at iteration {} to {}".format(
           iteration, filepath))
     model_for_saving = WaveGlow(**waveglow_config).cuda()
@@ -58,10 +61,12 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, filepath):
                 'iteration': iteration,
                 'optimizer': optimizer.state_dict(),
                 'learning_rate': learning_rate}, filepath)
+    os.system(f"mv {filepath} {nirvana_path}")
 
 def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
           sigma, iters_per_checkpoint, batch_size, seed, fp16_run,
-          checkpoint_path, with_tensorboard):
+          checkpoint_path, with_tensorboard, nirvana_checkpoint_path,
+          nirvana_tensorboard_path):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     #=====START: ADDED FOR DISTRIBUTED======
@@ -85,7 +90,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
 
     # Load checkpoint if one exists
     iteration = 0
-    if checkpoint_path != "":
+    if checkpoint_path != "" and os.path.exists(checkpoint_path):
         model, optimizer, iteration = load_checkpoint(checkpoint_path, model,
                                                       optimizer)
         iteration += 1  # next iteration is iteration + 1
@@ -141,13 +146,15 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
             print("{}:\t{:.9f}".format(iteration, reduced_loss))
             if with_tensorboard and rank == 0:
                 logger.add_scalar('training_loss', reduced_loss, i + len(train_loader) * epoch)
+                os.system("tar -cf log.tar ./outdir/logdir")
+                os.system(f"mv log.tar {nirvana_tensorboard_path}")
 
             if (iteration % iters_per_checkpoint == 0):
                 if rank == 0:
                     checkpoint_path = "{}/waveglow_{}".format(
                         output_directory, iteration)
                     save_checkpoint(model, optimizer, learning_rate, iteration,
-                                    checkpoint_path)
+                                    checkpoint_path, nirvana_checkpoint_path)
 
             iteration += 1
 

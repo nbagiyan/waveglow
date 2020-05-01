@@ -8,8 +8,10 @@
         "iters_per_checkpoint": 2000,
         "batch_size": 12,
         "seed": 1234,
-        "checkpoint_path": "",
-        "with_tensorboard": false
+        "checkpoint_path": "nirvana_checkpoint.pt",
+        "with_tensorboard": true,
+        "nirvana_checkpoint_path": "nirvana_checkpoint.pt",
+        "nirvana_tensorboard_path": "tensorboard.tar"
     },
     "data_config": {
         "training_files": "train_files.txt",

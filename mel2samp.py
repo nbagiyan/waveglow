@@ -46,7 +46,7 @@ def files_to_list(filename):
     with open(filename, encoding='utf-8') as f:
         files = f.readlines()
 
-    files = [f.rstrip() for f in files]
+    files = [f.split('|')[0].rstrip() for f in files]
     return files
 
 def load_wav_to_torch(full_path):
