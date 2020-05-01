@@ -146,7 +146,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
             print("{}:\t{:.9f}".format(iteration, reduced_loss))
             if with_tensorboard and rank == 0:
                 logger.add_scalar('training_loss', reduced_loss, i + len(train_loader) * epoch)
-                os.system("tar -cf log.tar ./outdir/logdir")
+                os.system("tar -cf log.tar ./checkpoints")
                 os.system(f"mv log.tar {nirvana_tensorboard_path}")
 
             if (iteration % iters_per_checkpoint == 0):
